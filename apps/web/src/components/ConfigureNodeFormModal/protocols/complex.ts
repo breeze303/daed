@@ -1,3 +1,4 @@
+import type { z } from 'zod'
 import type { ProtocolConfig } from './types'
 import {
   generateAnytlsURL,
@@ -12,8 +13,8 @@ import {
   parseTuicUrl,
   parseV2rayUrl,
 } from '@daeuniverse/dae-node-parser'
+
 import { Base64 } from 'js-base64'
-import { z } from 'zod'
 
 import {
   anytlsSchema,
@@ -31,7 +32,6 @@ import {
   trojanSchema,
   tuicSchema,
 } from '~/constants'
-
 import { AnyTLSForm } from '../AnyTLSForm'
 import { Hysteria2Form } from '../Hysteria2Form'
 import { JuicityForm } from '../JuicityForm'
@@ -44,7 +44,7 @@ import {
   DEFAULT_V2RAY_PROTOCOL_FORM_VALUES,
   generateV2rayLink,
   type V2rayFormValues,
-  v2rayFormSchema,
+  v2rayFormSchema
 } from '../v2rayLink'
 
 // ============================================================================

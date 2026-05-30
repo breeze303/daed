@@ -1,7 +1,7 @@
 import type { NodeFormProps } from './types'
 import { parseV2rayUrl } from '@daeuniverse/dae-node-parser'
-import { createPortal } from 'react-dom'
 
+import { createPortal } from 'react-dom'
 import { FormActions } from '~/components/FormActions'
 import { Checkbox } from '~/components/ui/checkbox'
 import { Input } from '~/components/ui/input'
@@ -12,7 +12,7 @@ import {
   DEFAULT_V2RAY_PROTOCOL_FORM_VALUES,
   generateV2rayLink,
   type V2rayFormValues,
-  v2rayFormSchema,
+  v2rayFormSchema
 } from './v2rayLink'
 export type { V2rayFormValues } from './v2rayLink'
 
