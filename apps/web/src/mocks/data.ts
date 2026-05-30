@@ -190,6 +190,24 @@ export const mockNodes: NodesQuery = {
         protocol: 'vless',
         tag: 'US-LosAngeles-BGP',
       },
+      {
+        __typename: 'Node',
+        id: 'node-5',
+        name: 'Frankfurt-XHTTP-05',
+        link: 'vless://uuid@xhttp.example.com:443?type=xhttp&security=tls&path=%2Fxhttp#Frankfurt-XHTTP-05',
+        address: 'xhttp.example.com:443',
+        protocol: 'vless',
+        tag: 'DE-Frankfurt-XHTTP',
+      },
+      {
+        __typename: 'Node',
+        id: 'node-6',
+        name: 'Seattle-SplitHTTP-06',
+        link: 'vless://uuid@splithttp.example.com:443?type=splithttp&security=tls&path=%2Fsplit#Seattle-SplitHTTP-06',
+        address: 'splithttp.example.com:443',
+        protocol: 'vless',
+        tag: 'US-Seattle-SplitHTTP',
+      },
     ],
   },
 }
@@ -241,6 +259,20 @@ export const mockSubscriptions: SubscriptionsQuery = {
           {
             __typename: 'Node',
             id: 'sub1-node-5',
+            name: 'Frankfurt-Premium-XHTTP-05',
+            protocol: 'vless',
+            link: 'vless://uuid@xhttp-sub.example.com:443?type=xhttp&security=tls&path=%2Fxhttp#Frankfurt-Premium-XHTTP-05',
+          },
+          {
+            __typename: 'Node',
+            id: 'sub1-node-6',
+            name: 'Seattle-Premium-SplitHTTP-06',
+            protocol: 'vless',
+            link: 'vless://uuid@splithttp-sub.example.com:443?type=splithttp&security=tls&path=%2Fsplit#Seattle-Premium-SplitHTTP-06',
+          },
+          {
+            __typename: 'Node',
+            id: 'sub1-node-7',
             name: 'Korea-Premium-05',
             protocol: 'hysteria2',
             link: 'hysteria2://xxxxx',
@@ -322,7 +354,7 @@ export const mockGroups: GroupsQuery = {
       subscriptions: [
         {
           __typename: 'GroupSubscription',
-          matchedCount: 5,
+          matchedCount: 7,
           nameFilterRegex: 'Premium',
           subscription: {
             __typename: 'Subscription',
@@ -377,6 +409,26 @@ export const mockGroups: GroupsQuery = {
             {
               __typename: 'Node',
               id: 'sub1-node-5',
+              link: 'vless://uuid@xhttp-sub.example.com:443?type=xhttp&security=tls&path=%2Fxhttp#Frankfurt-Premium-XHTTP-05',
+              name: 'Frankfurt-Premium-XHTTP-05',
+              address: 'xhttp-sub.example.com:443',
+              protocol: 'vless',
+              tag: 'DE-Premium-XHTTP',
+              subscriptionID: 'sub-1',
+            },
+            {
+              __typename: 'Node',
+              id: 'sub1-node-6',
+              link: 'vless://uuid@splithttp-sub.example.com:443?type=splithttp&security=tls&path=%2Fsplit#Seattle-Premium-SplitHTTP-06',
+              name: 'Seattle-Premium-SplitHTTP-06',
+              address: 'splithttp-sub.example.com:443',
+              protocol: 'vless',
+              tag: 'US-Premium-SplitHTTP',
+              subscriptionID: 'sub-1',
+            },
+            {
+              __typename: 'Node',
+              id: 'sub1-node-7',
               link: 'hysteria2://xxxxx',
               name: 'Korea-Premium-05',
               address: 'kr.example.com:443',
