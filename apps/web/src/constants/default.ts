@@ -123,6 +123,7 @@ export const DEFAULT_V2RAY_FORM_VALUES: z.infer<typeof v2raySchema> = {
   grpcMode: 'gun',
   grpcAuthority: '',
   // XHTTP specific
+  xhttpType: 'xhttp',
   xhttpMode: '',
   xhttpExtra: '',
   // Reality-specific fields

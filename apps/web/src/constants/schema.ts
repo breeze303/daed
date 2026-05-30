@@ -14,6 +14,7 @@ export const v2raySchema = z.object({
   grpcMode: z.enum(['gun', 'multi', 'guna']),
   grpcAuthority: z.string(),
   // XHTTP specific
+  xhttpType: z.enum(['xhttp', 'splithttp']),
   xhttpMode: z.string(),
   xhttpExtra: z.string(),
   // TLS fields (xtls is deprecated, use reality instead)
