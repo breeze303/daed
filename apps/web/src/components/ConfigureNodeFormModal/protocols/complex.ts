@@ -24,14 +24,12 @@ import {
   DEFAULT_SSR_FORM_VALUES,
   DEFAULT_TROJAN_FORM_VALUES,
   DEFAULT_TUIC_FORM_VALUES,
-  DEFAULT_V2RAY_FORM_VALUES,
   hysteria2Schema,
   juicitySchema,
   ssrSchema,
   ssSchema,
   trojanSchema,
   tuicSchema,
-  v2raySchema,
 } from '~/constants'
 
 import { AnyTLSForm } from '../AnyTLSForm'
@@ -42,134 +40,22 @@ import { SSRForm } from '../SSRForm'
 import { TrojanForm } from '../TrojanForm'
 import { TuicForm } from '../TuicForm'
 import { V2rayForm } from '../V2rayForm'
+import {
+  DEFAULT_V2RAY_PROTOCOL_FORM_VALUES,
+  generateV2rayLink,
+  type V2rayFormValues,
+  v2rayFormSchema,
+} from '../v2rayLink'
 
 // ============================================================================
 // V2Ray Protocol (VMess/VLESS)
 // ============================================================================
 
-const v2rayFormSchema = v2raySchema.extend({
-  protocol: z.enum(['vmess', 'vless']),
-})
-
-type V2rayFormValues = z.infer<typeof v2rayFormSchema>
-
-function generateV2rayLink(data: V2rayFormValues): string {
-  const {
-    protocol,
-    net,
-    tls,
-    path,
-    host,
-    type,
-    sni,
-    flow,
-    allowInsecure,
-    alpn,
-    ech,
-    id,
-    add,
-    port,
-    ps,
-    pbk,
-    fp,
-    sid,
-    spx,
-    pqv,
-    grpcMode,
-    grpcAuthority,
-    xhttpMode,
-    xhttpExtra,
-  } = data
-
-  if (protocol === 'vless') {
-    const params: Record<string, unknown> = {
-      type: net,
-      security: tls,
-      host,
-      headerType: type,
-      sni,
-      flow,
-      allowInsecure,
-    }
-
-    // Path handling based on network type
-    if (net === 'grpc') {
-      params.serviceName = path
-      if (grpcMode !== 'gun') params.mode = grpcMode
-      if (grpcAuthority) params.authority = grpcAuthority
-    } else if (net === 'kcp') {
-      params.seed = path
-    } else if (net === 'xhttp') {
-      params.path = path
-      if (xhttpMode) params.mode = xhttpMode
-      if (xhttpExtra) params.extra = xhttpExtra
-    } else {
-      params.path = path
-    }
-
-    if (alpn !== '') params.alpn = alpn
-    if (ech !== '') params.ech = ech
-
-    // Reality-specific parameters
-    if (tls === 'reality') {
-      params.pbk = pbk
-      params.fp = fp
-      if (sid) params.sid = sid
-      if (spx) params.spx = spx
-      if (pqv) params.pqv = pqv
-    }
-
-    return generateURL({
-      protocol,
-      username: id,
-      host: add,
-      port,
-      hash: ps,
-      params,
-    })
-  }
-
-  if (protocol === 'vmess') {
-    const body: Record<string, unknown> = structuredClone(data)
-
-    switch (net) {
-      case 'kcp':
-      case 'tcp':
-      default:
-        body.type = ''
-    }
-
-    switch (body.net) {
-      case 'ws':
-      case 'httpupgrade':
-      case 'xhttp':
-        break
-      case 'h2':
-      case 'grpc':
-      case 'kcp':
-      default:
-        if (body.net === 'tcp' && body.type === 'http') {
-          break
-        }
-        body.path = ''
-    }
-
-    delete body.flow
-
-    return `vmess://${Base64.encode(JSON.stringify(body))}`
-  }
-
-  return ''
-}
-
 export const v2rayProtocol: ProtocolConfig<V2rayFormValues> = {
   id: 'v2ray',
   label: 'V2RAY',
   schema: v2rayFormSchema,
-  defaultValues: {
-    protocol: 'vmess',
-    ...DEFAULT_V2RAY_FORM_VALUES,
-  },
+  defaultValues: DEFAULT_V2RAY_PROTOCOL_FORM_VALUES,
   generateLink: generateV2rayLink,
   parseLink: parseV2rayUrl,
   FormComponent: V2rayForm,

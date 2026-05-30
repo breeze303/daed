@@ -1,148 +1,40 @@
 import type { NodeFormProps } from './types'
-import { generateURL, parseV2rayUrl } from '@daeuniverse/dae-node-parser'
-import { Base64 } from 'js-base64'
+import { parseV2rayUrl } from '@daeuniverse/dae-node-parser'
 import { createPortal } from 'react-dom'
-import { z } from 'zod'
 
 import { FormActions } from '~/components/FormActions'
 import { Checkbox } from '~/components/ui/checkbox'
 import { Input } from '~/components/ui/input'
 import { NumberInput } from '~/components/ui/number-input'
 import { Select } from '~/components/ui/select'
-import { DEFAULT_V2RAY_FORM_VALUES, v2raySchema } from '~/constants'
 import { useNodeForm } from '~/hooks'
-
-const formSchema = v2raySchema.extend({
-  protocol: z.enum(['vmess', 'vless']),
-})
-
-export type V2rayFormValues = z.infer<typeof formSchema>
-
-const defaultValues: V2rayFormValues = {
-  protocol: 'vmess',
-  ...DEFAULT_V2RAY_FORM_VALUES,
-}
-
-function generateV2rayLink(data: V2rayFormValues): string {
-  const {
-    protocol,
-    net,
-    tls,
-    path,
-    host,
-    type,
-    sni,
-    flow,
-    allowInsecure,
-    alpn,
-    ech,
-    id,
-    add,
-    port,
-    ps,
-    pbk,
-    fp,
-    sid,
-    spx,
-    pqv,
-    grpcMode,
-    grpcAuthority,
-    xhttpMode,
-    xhttpExtra,
-  } = data
-
-  if (protocol === 'vless') {
-    const params: Record<string, unknown> = {
-      type: net,
-      security: tls,
-      host,
-      headerType: type,
-      sni,
-      flow,
-      allowInsecure,
-    }
-
-    // Path handling based on network type
-    if (net === 'grpc') {
-      params.serviceName = path
-      if (grpcMode !== 'gun') params.mode = grpcMode
-      if (grpcAuthority) params.authority = grpcAuthority
-    } else if (net === 'kcp') {
-      params.seed = path
-    } else if (net === 'xhttp') {
-      params.path = path
-      if (xhttpMode) params.mode = xhttpMode
-      if (xhttpExtra) params.extra = xhttpExtra
-    } else {
-      params.path = path
-    }
-
-    if (alpn !== '') params.alpn = alpn
-    if (ech !== '') params.ech = ech
-
-    // Reality-specific parameters
-    if (tls === 'reality') {
-      params.pbk = pbk
-      params.fp = fp
-      if (sid) params.sid = sid
-      if (spx) params.spx = spx
-      if (pqv) params.pqv = pqv
-    }
-
-    return generateURL({
-      protocol,
-      username: id,
-      host: add,
-      port,
-      hash: ps,
-      params,
-    })
-  }
-
-  if (protocol === 'vmess') {
-    const body: Record<string, unknown> = structuredClone(data)
-
-    switch (net) {
-      case 'kcp':
-      case 'tcp':
-      default:
-        body.type = ''
-    }
-
-    switch (body.net) {
-      case 'ws':
-        // No operation, skip
-        break
-      case 'h2':
-      case 'grpc':
-      case 'kcp':
-      default:
-        if (body.net === 'tcp' && body.type === 'http') {
-          break
-        }
-
-        body.path = ''
-    }
-
-    if (!(body.protocol === 'vless' && body.tls === 'xtls')) {
-      delete body.flow
-    }
-
-    return `vmess://${Base64.encode(JSON.stringify(body))}`
-  }
-
-  return ''
-}
+import {
+  DEFAULT_V2RAY_PROTOCOL_FORM_VALUES,
+  generateV2rayLink,
+  type V2rayFormValues,
+  v2rayFormSchema,
+} from './v2rayLink'
+export type { V2rayFormValues } from './v2rayLink'
 
 export function V2rayForm({ onLinkGeneration, initialValues, actionsPortal }: NodeFormProps<V2rayFormValues>) {
   const { formValues, setValue, handleSubmit, onSubmit, submit, resetForm, isDirty, isValid, errors, t } = useNodeForm({
-    schema: formSchema,
-    defaultValues,
+    schema: v2rayFormSchema,
+    defaultValues: DEFAULT_V2RAY_PROTOCOL_FORM_VALUES,
     initialValues,
     onLinkGeneration,
     generateLink: generateV2rayLink,
     parseLink: parseV2rayUrl,
   })
+  const networkOptions = [
+    { label: 'TCP', value: 'tcp' },
+    { label: 'mKCP', value: 'kcp' },
+    { label: 'WebSocket', value: 'ws' },
+    { label: 'HTTP/2', value: 'h2' },
+    { label: 'gRPC', value: 'grpc' },
+    { label: 'HTTPUpgrade', value: 'httpupgrade' },
+    ...(formValues.protocol === 'vless' ? [{ label: t('configureNode.xhttp'), value: 'xhttp' }] : []),
+  ]
+  const showXhttpFields = formValues.protocol === 'vless' && formValues.net === 'xhttp'
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
@@ -153,7 +45,14 @@ export function V2rayForm({ onLinkGeneration, initialValues, actionsPortal }: No
           { label: 'VLESS', value: 'vless' },
         ]}
         value={formValues.protocol}
-        onChange={(val) => setValue('protocol', (val || 'vmess') as 'vless' | 'vmess')}
+        onChange={(val) => {
+          const protocol = (val || 'vmess') as V2rayFormValues['protocol']
+
+          setValue('protocol', protocol)
+          if (protocol === 'vmess' && formValues.net === 'xhttp') {
+            setValue('net', 'tcp')
+          }
+        }}
       />
 
       <Input label={t('configureNode.name')} value={formValues.ps} onChange={(e) => setValue('ps', e.target.value)} />
@@ -276,15 +175,7 @@ export function V2rayForm({ onLinkGeneration, initialValues, actionsPortal }: No
 
       <Select
         label={t('configureNode.network')}
-        data={[
-          { label: 'TCP', value: 'tcp' },
-          { label: 'mKCP', value: 'kcp' },
-          { label: 'WebSocket', value: 'ws' },
-          { label: 'HTTP/2', value: 'h2' },
-          { label: 'gRPC', value: 'grpc' },
-          { label: 'HTTPUpgrade', value: 'httpupgrade' },
-          { label: 'XHTTP', value: 'xhttp' },
-        ]}
+        data={networkOptions}
         value={formValues.net}
         onChange={(val) => setValue('net', (val || 'tcp') as V2rayFormValues['net'])}
       />
@@ -320,7 +211,7 @@ export function V2rayForm({ onLinkGeneration, initialValues, actionsPortal }: No
       {(formValues.net === 'ws' ||
         formValues.net === 'h2' ||
         formValues.net === 'httpupgrade' ||
-        formValues.net === 'xhttp' ||
+        showXhttpFields ||
         formValues.tls === 'tls' ||
         (formValues.net === 'tcp' && formValues.type === 'http')) && (
         <Input
@@ -345,7 +236,7 @@ export function V2rayForm({ onLinkGeneration, initialValues, actionsPortal }: No
       {(formValues.net === 'ws' ||
         formValues.net === 'h2' ||
         formValues.net === 'httpupgrade' ||
-        formValues.net === 'xhttp' ||
+        showXhttpFields ||
         (formValues.net === 'tcp' && formValues.type === 'http')) && (
         <Input
           label={t('configureNode.path')}
@@ -379,15 +270,24 @@ export function V2rayForm({ onLinkGeneration, initialValues, actionsPortal }: No
         </>
       )}
 
-      {formValues.net === 'xhttp' && (
+      {showXhttpFields && (
         <>
+          <Select
+            label={t('configureNode.xhttpLinkType')}
+            data={[
+              { label: t('configureNode.xhttp'), value: 'xhttp' },
+              { label: t('configureNode.splithttp'), value: 'splithttp' },
+            ]}
+            value={formValues.xhttpType}
+            onChange={(val) => setValue('xhttpType', (val || 'xhttp') as V2rayFormValues['xhttpType'])}
+          />
           <Input
-            label="XHTTP Mode"
+            label={t('configureNode.xhttpMode')}
             value={formValues.xhttpMode}
             onChange={(e) => setValue('xhttpMode', e.target.value)}
           />
           <Input
-            label="XHTTP Extra"
+            label={t('configureNode.xhttpExtra')}
             value={formValues.xhttpExtra}
             onChange={(e) => setValue('xhttpExtra', e.target.value)}
           />
