@@ -40,6 +40,7 @@ export interface V2rayConfig {
   grpcMode: 'gun' | 'multi' | 'guna' // mode
   grpcAuthority: string // authority
   // XHTTP specific
+  xhttpType: 'xhttp' | 'splithttp' // raw type alias
   xhttpMode: string // mode
   xhttpExtra: string // extra
   // TLS fields (4.4)

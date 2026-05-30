@@ -13,6 +13,18 @@ import type {
 
 import { Base64 } from 'js-base64'
 
+function isXHTTPType(netType: string): boolean {
+  return ['xhttp', 'splithttp'].includes(netType.toLowerCase())
+}
+
+function getXHTTPType(netType: string): V2rayConfig['xhttpType'] {
+  return netType.toLowerCase() === 'splithttp' ? 'splithttp' : 'xhttp'
+}
+
+function normalizeVMessNetworkType(type: string): V2rayConfig['net'] {
+  return isXHTTPType(type) ? 'tcp' : normalizeNetworkType(type)
+}
+
 /**
  * Parse HTTP/HTTPS protocol URL
  * Format: http://[username:password@]host:port#name
@@ -487,6 +499,7 @@ export function parseVMessUrl(url: string): (Partial<V2rayConfig> & { protocol: 
         ech: '',
         grpcMode: 'gun',
         grpcAuthority: '',
+        xhttpType: 'xhttp',
         xhttpMode: '',
         xhttpExtra: '',
       }
@@ -510,6 +523,7 @@ function parseVMessStandardUrl(url: string): (Partial<V2rayConfig> & { protocol:
 
     // Normalize network type: http -> h2 for HTTP/2
     const netType = params.get('type') || 'tcp'
+    const normalizedNetType = normalizeVMessNetworkType(netType)
 
     return {
       protocol: 'vmess',
@@ -521,16 +535,17 @@ function parseVMessStandardUrl(url: string): (Partial<V2rayConfig> & { protocol:
       scy: (params.get('encryption') || 'auto') as V2rayConfig['scy'],
       aid: 0, // AEAD VMess doesn't use alterId
       // Transport fields
-      net: normalizeNetworkType(netType),
+      net: normalizedNetType,
       type: (params.get('headerType') || 'none') as V2rayConfig['type'],
       host: params.get('host') || '',
-      path: getPathValue(params, netType),
+      path: getPathValue(params, normalizedNetType),
       // gRPC specific
-      grpcMode: (params.get('mode') || 'gun') as V2rayConfig['grpcMode'],
-      grpcAuthority: params.get('authority') || '',
+      grpcMode: normalizedNetType === 'grpc' ? ((params.get('mode') || 'gun') as V2rayConfig['grpcMode']) : 'gun',
+      grpcAuthority: normalizedNetType === 'grpc' ? params.get('authority') || '' : '',
       // XHTTP specific
-      xhttpMode: netType === 'xhttp' ? params.get('mode') || '' : '',
-      xhttpExtra: params.get('extra') || '',
+      xhttpType: 'xhttp',
+      xhttpMode: '',
+      xhttpExtra: '',
       // TLS fields
       tls: (params.get('security') || 'none') as V2rayConfig['tls'],
       fp: params.get('fp') || '',
@@ -567,6 +582,7 @@ function normalizeNetworkType(type: string): V2rayConfig['net'] {
     grpc: 'grpc',
     httpupgrade: 'httpupgrade',
     xhttp: 'xhttp',
+    splithttp: 'xhttp',
   }
   return typeMap[type.toLowerCase()] || 'tcp'
 }
@@ -581,6 +597,9 @@ function getPathValue(params: URLSearchParams, netType: string): string {
       return params.get('serviceName') || ''
     case 'kcp':
       return params.get('seed') || ''
+    case 'xhttp':
+    case 'splithttp':
+      return params.get('path') || ''
     default:
       return params.get('path') || ''
   }
@@ -618,11 +637,12 @@ export function parseVLessUrl(url: string): (Partial<V2rayConfig> & { protocol: 
       host: params.get('host') || '',
       path: getPathValue(params, netType),
       // gRPC specific
-      grpcMode: (params.get('mode') || 'gun') as V2rayConfig['grpcMode'],
-      grpcAuthority: params.get('authority') || '',
+      grpcMode: netType === 'grpc' ? ((params.get('mode') || 'gun') as V2rayConfig['grpcMode']) : 'gun',
+      grpcAuthority: netType === 'grpc' ? params.get('authority') || '' : '',
       // XHTTP specific
-      xhttpMode: netType === 'xhttp' ? params.get('mode') || '' : '',
-      xhttpExtra: params.get('extra') || '',
+      xhttpType: getXHTTPType(netType),
+      xhttpMode: isXHTTPType(netType) ? params.get('mode') || '' : '',
+      xhttpExtra: isXHTTPType(netType) ? params.get('extra') || '' : '',
       // TLS fields (4.4)
       tls: (params.get('security') || 'none') as V2rayConfig['tls'],
       fp: params.get('fp') || '',

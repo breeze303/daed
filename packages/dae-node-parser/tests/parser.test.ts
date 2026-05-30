@@ -154,6 +154,45 @@ describe('parseV2rayUrl', () => {
     })
   })
 
+  it('should parse VLESS URL with xhttp and preserve xhttp fields', () => {
+    const result = parseV2rayUrl(
+      'vless://uuid@example.com:443?type=xhttp&security=tls&sni=example.com&host=example.com&path=%2Fxhttp%2Fencoded&mode=auto&extra=%7B%22noGRPCHeader%22%3Atrue%7D&alpn=h2%2Chttp%2F1.1#xhttp-vless',
+    )
+    expect(result).toMatchObject({
+      protocol: 'vless',
+      net: 'xhttp',
+      xhttpType: 'xhttp',
+      xhttpMode: 'auto',
+      xhttpExtra: '{"noGRPCHeader":true}',
+      path: '/xhttp/encoded',
+      tls: 'tls',
+      sni: 'example.com',
+      host: 'example.com',
+      alpn: 'h2,http/1.1',
+      grpcMode: 'gun',
+      grpcAuthority: '',
+    })
+  })
+
+  it('should parse VLESS URL with splithttp alias and missing mode', () => {
+    const result = parseV2rayUrl(
+      'vless://uuid@example.com:443?type=splithttp&security=tls&sni=example.com&host=example.com&path=%2Fsplit%252Fencoded&extra=%7B%22download%22%3A%22h2%22%7D#splithttp-vless',
+    )
+    expect(result).toMatchObject({
+      protocol: 'vless',
+      net: 'xhttp',
+      xhttpType: 'splithttp',
+      xhttpMode: '',
+      xhttpExtra: '{"download":"h2"}',
+      path: '/split%2Fencoded',
+      tls: 'tls',
+      sni: 'example.com',
+      host: 'example.com',
+      grpcMode: 'gun',
+      grpcAuthority: '',
+    })
+  })
+
   it('should parse VLESS URL with REALITY', () => {
     const result = parseV2rayUrl(
       'vless://uuid@example.com:443?type=tcp&security=reality&pbk=publickey&sid=shortid&fp=chrome&sni=sni.example.com&flow=xtls-rprx-vision#reality-vless',
@@ -166,6 +205,25 @@ describe('parseV2rayUrl', () => {
       fp: 'chrome',
       sni: 'sni.example.com',
       flow: 'xtls-rprx-vision',
+    })
+  })
+
+  it('should preserve reality-related fields for splithttp VLESS', () => {
+    const result = parseV2rayUrl(
+      'vless://uuid@example.com:443?type=splithttp&security=reality&pbk=publickey&sid=shortid&fp=chrome&sni=sni.example.com&flow=xtls-rprx-vision&alpn=h2%2Chttp%2F1.1&path=%2Freality#reality-splithttp-vless',
+    )
+    expect(result).toMatchObject({
+      protocol: 'vless',
+      net: 'xhttp',
+      xhttpType: 'splithttp',
+      path: '/reality',
+      tls: 'reality',
+      pbk: 'publickey',
+      sid: 'shortid',
+      fp: 'chrome',
+      sni: 'sni.example.com',
+      flow: 'xtls-rprx-vision',
+      alpn: 'h2,http/1.1',
     })
   })
 
@@ -233,6 +291,7 @@ describe('parseV2rayUrl', () => {
       host: 'example.com',
       path: '/ws',
       scy: 'auto',
+      xhttpType: 'xhttp',
     })
   })
 
@@ -245,6 +304,28 @@ describe('parseV2rayUrl', () => {
       port: 31415,
       scy: 'none',
       tls: 'none',
+      xhttpType: 'xhttp',
+    })
+  })
+
+  it('should not recognize VMess splithttp as xhttp transport', () => {
+    const result = parseV2rayUrl(
+      'vmess://uuid@example.com:443?type=splithttp&path=%2Fsplit&mode=auto&extra=x&encryption=auto#bad-vmess-splithttp',
+    )
+    expect(result).toMatchObject({
+      protocol: 'vmess',
+      net: 'tcp',
+      path: '/split',
+      xhttpType: 'xhttp',
+      xhttpMode: '',
+      xhttpExtra: '',
+      grpcMode: 'gun',
+      grpcAuthority: '',
+    })
+    expect(result).not.toMatchObject({
+      net: 'xhttp',
+      xhttpMode: 'auto',
+      xhttpExtra: 'x',
     })
   })
 
@@ -297,5 +378,9 @@ describe('parseNodeUrl', () => {
 
   it('should return null for unknown protocol', () => {
     expect(parseNodeUrl('unknown://example.com')).toBeNull()
+  })
+
+  it('should reject xhttp scheme URLs', () => {
+    expect(parseNodeUrl('xhttp://example.com')).toBeNull()
   })
 })
