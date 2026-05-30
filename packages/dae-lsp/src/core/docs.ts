@@ -44,6 +44,8 @@ Nodes defined here will be merged as a part of the global node pool.
 
 **Supported protocols:** socks5, http, https, ss, ssr, vmess, vless, trojan, tuic, juicity, hysteria2, hysteria
 
+**VLESS node URL transport note:** VLESS share links may use \`type=xhttp\` or \`type=splithttp\` inside the quoted node URL string, for example \`vless://...?...&type=xhttp\`. This is node/share-link transport support only and does not add RoutingA \`network()\` keywords or standalone \`xhttp://\` syntax.
+
 Full support list: https://github.com/daeuniverse/dae/blob/main/docs/en/proxy-protocols.md
 
 Example:

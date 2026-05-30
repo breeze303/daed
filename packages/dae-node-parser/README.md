@@ -78,9 +78,15 @@ const hy2Url = generateHysteria2URL({
 - `parseJuicityUrl` - Juicity
 - `parseHysteria2Url` - Hysteria2
 - `parseVMessUrl` - VMess
-- `parseVLessUrl` - VLESS
+- `parseVLessUrl` - VLESS, including `type=xhttp` and `type=splithttp` share-link transport aliases
 - `parseV2rayUrl` - VMess/VLESS (auto-detect)
 - `parseNodeUrl` - Universal parser (auto-detect all protocols)
+
+### VLESS XHTTP note
+
+`@daeuniverse/dae-node-parser` supports VLESS share links that carry XHTTP transport via query parameters such as `type=xhttp` and `type=splithttp`.
+
+This support is limited to parsing and generating VLESS node URLs. It does not imply support for standalone `xhttp://` URLs, RoutingA `network(xhttp)` config keywords, VMess XHTTP, or other XHTTP-adjacent features beyond those VLESS share-link transport aliases.
 
 ### Generators
 
